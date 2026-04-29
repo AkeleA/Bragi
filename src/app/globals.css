@@ -111,39 +111,24 @@ input:disabled {
 }
 
 .brand {
-  align-items: center;
+  align-items: flex-start;
   display: inline-flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
   width: fit-content;
 }
 
-.brand-mark {
-  align-items: center;
-  background: var(--foreground);
-  border-radius: 6px;
-  color: var(--background);
-  display: inline-flex;
-  font-weight: 800;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-
-.brand strong,
-.brand small {
+.brand-logo {
   display: block;
-}
-
-.brand strong {
-  font-size: 16px;
-  line-height: 1.1;
+  height: 30px;
+  object-fit: contain;
+  width: auto;
 }
 
 .brand small {
   color: var(--muted);
   font-size: 12px;
-  margin-top: 2px;
 }
 
 .main-nav {

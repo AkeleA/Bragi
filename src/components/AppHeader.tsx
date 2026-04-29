@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const navItems = [
   { href: "/editor", label: "Editor" },
-  { href: "/schedule", label: "Scheduling" }
+  { href: "/schedule", label: "Scheduling" },
 ] as const;
 
 export function AppHeader() {
@@ -20,17 +20,17 @@ export function AppHeader() {
   useEffect(() => setMounted(true), []);
 
   const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+  const logoSrc =
+    mounted && resolvedTheme === "light"
+      ? "/bragi_light.png"
+      : "/bragi_dark.png";
+  const authCallbackUrl = pathname && pathname !== "/sign-in" ? pathname : "/editor";
 
   return (
     <header className="topbar">
       <Link className="brand" href="/editor" aria-label="Bragi editor home">
-        <span className="brand-mark" aria-hidden="true">
-          B
-        </span>
-        <span>
-          <strong>Bragi</strong>
-          <small>Video edits and scheduled posts</small>
-        </span>
+        <img className="brand-logo" src={logoSrc} alt="Bragi" />
+        <small>Video edits and scheduled posts</small>
       </Link>
 
       <nav className="main-nav" aria-label="Primary navigation">
@@ -55,11 +55,19 @@ export function AppHeader() {
           {mounted && resolvedTheme === "dark" ? "Light" : "Dark"}
         </button>
         {status === "authenticated" ? (
-          <button className="btn secondary" onClick={() => signOut()} type="button">
+          <button
+            className="btn secondary"
+            onClick={() => signOut()}
+            type="button"
+          >
             {session.user?.email ?? "Sign out"}
           </button>
         ) : (
-          <button className="btn primary" onClick={() => signIn()} type="button">
+          <button
+            className="btn primary"
+            onClick={() => signIn(undefined, { callbackUrl: authCallbackUrl })}
+            type="button"
+          >
             Sign in
           </button>
         )}

@@ -1,5 +1,14 @@
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { EditorWorkspace } from "@/components/EditorWorkspace";
+import { authOptions } from "@/lib/auth";
 
-export default function EditorPage() {
+export default async function EditorPage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect(`/sign-in?callbackUrl=${encodeURIComponent("/editor")}`);
+  }
+
   return <EditorWorkspace />;
 }

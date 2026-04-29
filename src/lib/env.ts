@@ -1,13 +1,14 @@
 const optionalEnv = (name: string) => process.env[name] ?? "";
 
 export const env = {
+  nodeEnv: optionalEnv("NODE_ENV"),
   appUrl: optionalEnv("NEXT_PUBLIC_APP_URL"),
   nextAuthUrl: optionalEnv("NEXTAUTH_URL"),
   nextAuthSecret: optionalEnv("NEXTAUTH_SECRET"),
   emailServer: optionalEnv("EMAIL_SERVER"),
   emailFrom: optionalEnv("EMAIL_FROM"),
-  supabaseUrl: optionalEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: optionalEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  mailtrapApiToken: optionalEnv("MAILTRAP_API_TOKEN"),
+  supabaseUrl: optionalEnv("SUPABASE_URL") || optionalEnv("NEXT_PUBLIC_SUPABASE_URL"),
   supabaseServiceRoleKey: optionalEnv("SUPABASE_SERVICE_ROLE_KEY"),
   r2: {
     accountId: optionalEnv("R2_ACCOUNT_ID"),

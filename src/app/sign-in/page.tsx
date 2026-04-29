@@ -6,27 +6,43 @@ import { signIn } from "next-auth/react";
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result = await signIn("email", {
-      email,
-      redirect: false,
-      callbackUrl: "/editor"
-    });
+    setIsSending(true);
+    setMessage("");
 
-    setMessage(
-      result?.ok
-        ? "Check your email for the sign-in link."
-        : "Email sign-in is not configured yet. Fill EMAIL_SERVER and EMAIL_FROM."
-    );
+    try {
+      const callbackUrl = getCallbackUrl();
+      const result = await signIn("email", {
+        email,
+        redirect: false,
+        callbackUrl
+      });
+
+      setMessage(
+        result?.ok
+          ? "Check your email to continue to Bragi."
+          : getSignInErrorMessage(result?.error)
+      );
+    } catch {
+      setMessage(
+        "We could not send a sign-in link because auth storage is not ready. Please try again after the auth tables are configured."
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <main className="auth-page" aria-labelledby="signin-title">
       <form className="auth-card" onSubmit={submit}>
         <p className="eyebrow">Account</p>
-        <h1 id="signin-title">Sign in to Bragi</h1>
+        <h1 id="signin-title">Sign in or create account</h1>
+        <p className="help-text">
+          Use your email to continue to the editor. New emails create a Bragi account.
+        </p>
         <div className="field">
           <label htmlFor="email">Email address</label>
           <input
@@ -39,8 +55,8 @@ export default function SignInPage() {
             value={email}
           />
         </div>
-        <button className="btn primary" type="submit">
-          Send sign-in link
+        <button className="btn primary" disabled={isSending} type="submit">
+          {isSending ? "Sending..." : "Continue with email"}
         </button>
         {message ? (
           <p className="notice" role="status">
@@ -50,4 +66,34 @@ export default function SignInPage() {
       </form>
     </main>
   );
+}
+
+function getCallbackUrl() {
+  const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
+
+  if (callbackUrl?.startsWith("/")) {
+    return callbackUrl;
+  }
+
+  return "/editor";
+}
+
+function getSignInErrorMessage(error?: string | null) {
+  if (
+    error === "GetUserByEmailError" ||
+    error === "CreateUserError" ||
+    error === "CreateVerificationTokenError"
+  ) {
+    return "We could not send a sign-in link because auth storage is not ready. Please try again after the auth tables are configured.";
+  }
+
+  if (error === "EmailSignin") {
+    return "We could not send that sign-in email. Check the address and try again.";
+  }
+
+  if (error === "Configuration") {
+    return "Email sign-in is not configured yet. Fill the email and auth environment values first.";
+  }
+
+  return "Something went wrong while sending the sign-in link. Please try again.";
 }

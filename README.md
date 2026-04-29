@@ -28,7 +28,7 @@ Then open `http://localhost:3000`.
 You need to provide credentials in `.env.local` when we wire real services:
 
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `EMAIL_SERVER`, and `EMAIL_FROM` for email magic-link auth.
-- Supabase project URL/keys for auth and database.
+- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` for server-side auth/database access.
 - Cloudflare R2 bucket credentials for media storage.
 - Upstash QStash token for reliable scheduled publishing.
 - Social API credentials for YouTube, TikTok, and Meta.
