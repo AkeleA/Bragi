@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -30,8 +30,6 @@ export function AppHeader() {
     mounted && resolvedTheme === "light"
       ? "/bragi_dark.png"
       : "/bragi_light.png";
-  const authCallbackUrl =
-    pathname && pathname !== "/sign-in" ? pathname : "/editor";
 
   return (
     <header className="topbar">
@@ -95,15 +93,9 @@ export function AppHeader() {
               Sign out
             </button>
           ) : (
-            <button
-              className="btn primary"
-              onClick={() =>
-                signIn(undefined, { callbackUrl: authCallbackUrl })
-              }
-              type="button"
-            >
+            <Link className="btn primary" href="/sign-in">
               Sign in
-            </button>
+            </Link>
           )}
         </div>
       </div>
