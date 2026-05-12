@@ -1,99 +1,102 @@
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import type { NextAuthOptions } from "next-auth";
 import EmailProvider from "next-auth/providers/email";
+import nodemailer from "nodemailer";
 import { env } from "./env";
 
-const hasSupabaseAdapter = Boolean(env.supabaseUrl && env.supabaseServiceRoleKey);
+const hasSupabaseAdapter = Boolean(
+  env.supabaseUrl && env.supabaseServiceRoleKey,
+);
 const hasEmailProvider = Boolean(env.emailServer && env.emailFrom);
-const hasMailtrapApi = Boolean(env.mailtrapApiToken && env.emailFrom);
+const hasNodemailer = Boolean(
+  env.smtpHost && env.smtpUser && env.smtpPass && env.emailFrom,
+);
 const canUseDevEmail = env.nodeEnv !== "production";
 
 export const authOptions: NextAuthOptions = {
   adapter: hasSupabaseAdapter
     ? SupabaseAdapter({
         url: env.supabaseUrl,
-        secret: env.supabaseServiceRoleKey
+        secret: env.supabaseServiceRoleKey,
       })
     : undefined,
   providers:
-    hasMailtrapApi || hasEmailProvider || canUseDevEmail
+    hasNodemailer || hasEmailProvider || canUseDevEmail
       ? [
-          hasMailtrapApi
+          hasNodemailer
             ? EmailProvider({
                 server: "smtp://localhost:1025",
                 from: env.emailFrom,
                 async sendVerificationRequest({ identifier, url }) {
-                  const from = parseEmailFrom(env.emailFrom);
-                  const response = await fetch("https://send.api.mailtrap.io/api/send", {
-                    method: "POST",
-                    headers: {
-                      Authorization: `Bearer ${env.mailtrapApiToken}`,
-                      "Content-Type": "application/json"
+                  const transporter = nodemailer.createTransport({
+                    host: env.smtpHost,
+                    port: getSmtpPort(),
+                    secure: getSmtpPort() === 465,
+                    auth: {
+                      user: env.smtpUser,
+                      pass: env.smtpPass,
                     },
-                    body: JSON.stringify({
-                      from,
-                      to: [{ email: identifier }],
-                      subject: "Sign in to Bragi",
-                      text: `Sign in to Bragi:\n\n${url}\n\n`,
-                      html: `<p>Sign in to Bragi:</p><p><a href="${url}">Open Bragi</a></p>`
-                    })
                   });
 
-                  if (!response.ok) {
-                    const detail = await response.text();
-                    throw new Error(`Mailtrap send failed: ${response.status} ${detail}`);
-                  }
-                }
+                  await transporter.sendMail({
+                    from: env.emailFrom,
+                    to: identifier,
+                    subject: "Sign in to Bragi",
+                    text: `Sign in to Bragi:\n\n${url}\n\n`,
+                    html: `<p>Hello User! <br/>
+                    Clock on this link to sign in to Bragi:<br/>
+                    </p><p><a href="${url}">Open Bragi</a></p>`,
+                  });
+                },
               })
             : hasEmailProvider
-            ? EmailProvider({
-                server: env.emailServer,
-                from: env.emailFrom
-              })
-            : EmailProvider({
-                server: "smtp://localhost:1025",
-                from: "Bragi Dev <auth@localhost>",
-                async sendVerificationRequest({ identifier, url }) {
-                  console.log("\nBragi development sign-in link");
-                  console.log(`Email: ${identifier}`);
-                  console.log(url);
-                  console.log("");
-                }
-              })
+              ? EmailProvider({
+                  server: env.emailServer,
+                  from: env.emailFrom,
+                })
+              : EmailProvider({
+                  server: "smtp://localhost:1025",
+                  from: "Bragi Dev <auth@localhost>",
+                  async sendVerificationRequest({ identifier, url }) {
+                    console.log("\nBragi development sign-in link");
+                    console.log(`Email: ${identifier}`);
+                    console.log(url);
+                    console.log("");
+                  },
+                }),
         ]
       : [],
   pages: {
     signIn: "/sign-in",
-    verifyRequest: "/sign-in/check-email"
+    verifyRequest: "/sign-in/check-email",
   },
   session: {
-    strategy: hasSupabaseAdapter ? "database" : "jwt"
+    strategy: hasSupabaseAdapter ? "database" : "jwt",
   },
   logger: {
     error(code, metadata) {
       if (isSupabaseSchemaError(metadata)) {
         console.error(
-          `[next-auth][${code}] Supabase adapter schema is not exposed. Expose the next_auth schema in Supabase API settings or disable the adapter until the Auth.js tables are ready.`
+          `[next-auth][${code}] Supabase adapter schema is not exposed. Expose the next_auth schema in Supabase API settings or disable the adapter until the Auth.js tables are ready.`,
+        );
+        return;
+      }
+
+      if (isSupabaseNetworkError(metadata)) {
+        console.error(
+          `[next-auth][${code}] Supabase could not be reached. Confirm SUPABASE_URL points to an active Supabase project and restart the dev server after updating .env.`,
         );
         return;
       }
 
       console.error(`[next-auth][${code}]`, metadata);
-    }
+    },
   },
-  secret: env.nextAuthSecret
+  secret: env.nextAuthSecret,
 };
 
-function parseEmailFrom(value: string) {
-  const match = value.match(/^(.*?)\s*<([^>]+)>$/);
-  if (!match) {
-    return { email: value };
-  }
-
-  return {
-    email: match[2].trim(),
-    name: match[1].trim().replace(/^"|"$/g, "")
-  };
+function getSmtpPort() {
+  return Number(env.smtpPort) || 587;
 }
 
 function isSupabaseSchemaError(metadata: unknown) {
@@ -101,8 +104,8 @@ function isSupabaseSchemaError(metadata: unknown) {
     metadata instanceof Error
       ? metadata
       : metadata && typeof metadata === "object" && "error" in metadata
-      ? (metadata as { error?: unknown }).error
-      : metadata;
+        ? (metadata as { error?: unknown }).error
+        : metadata;
 
   if (!error || typeof error !== "object") {
     return false;
@@ -115,4 +118,40 @@ function isSupabaseSchemaError(metadata: unknown) {
     (typeof maybePostgrestError.message === "string" &&
       maybePostgrestError.message.includes("Invalid schema: next_auth"))
   );
+}
+
+function isSupabaseNetworkError(metadata: unknown) {
+  const text = stringifyErrorMetadata(metadata);
+
+  return (
+    text.includes("fetch failed") ||
+    text.includes("ENOTFOUND") ||
+    text.includes("EAI_AGAIN") ||
+    text.includes("ECONNREFUSED")
+  );
+}
+
+function stringifyErrorMetadata(metadata: unknown): string {
+  if (metadata instanceof Error) {
+    return `${metadata.name} ${metadata.message} ${metadata.stack ?? ""}`;
+  }
+
+  if (!metadata || typeof metadata !== "object") {
+    return String(metadata ?? "");
+  }
+
+  const error =
+    "error" in metadata ? (metadata as { error?: unknown }).error : undefined;
+  const details =
+    "details" in metadata
+      ? (metadata as { details?: unknown }).details
+      : undefined;
+  const message =
+    "message" in metadata
+      ? (metadata as { message?: unknown }).message
+      : undefined;
+
+  return [message, details, stringifyErrorMetadata(error)]
+    .filter(Boolean)
+    .join(" ");
 }

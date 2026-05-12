@@ -8,6 +8,10 @@ export const env = {
   emailServer: optionalEnv("EMAIL_SERVER"),
   emailFrom: optionalEnv("EMAIL_FROM"),
   mailtrapApiToken: optionalEnv("MAILTRAP_API_TOKEN"),
+  smtpHost: optionalEnv("SMTP_HOST"),
+  smtpPort: optionalEnv("SMTP_PORT"),
+  smtpUser: optionalEnv("SMTP_USER"),
+  smtpPass: optionalEnv("SMTP_PASS"),
   supabaseUrl: optionalEnv("SUPABASE_URL") || optionalEnv("NEXT_PUBLIC_SUPABASE_URL"),
   supabaseServiceRoleKey: optionalEnv("SUPABASE_SERVICE_ROLE_KEY"),
   r2: {

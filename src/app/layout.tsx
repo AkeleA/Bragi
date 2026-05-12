@@ -5,11 +5,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bragi",
-  description: "Edit short videos and schedule them across social channels."
+  description: "Edit short videos and schedule them across social channels.",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {

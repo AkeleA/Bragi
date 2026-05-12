@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -16,62 +17,129 @@ export function AppHeader() {
   const { data: session, status } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   const nextTheme = resolvedTheme === "dark" ? "light" : "dark";
+  const themeLabel = mounted
+    ? `Switch to ${nextTheme} mode`
+    : "Toggle color mode";
   const logoSrc =
     mounted && resolvedTheme === "light"
-      ? "/bragi_light.png"
-      : "/bragi_dark.png";
-  const authCallbackUrl = pathname && pathname !== "/sign-in" ? pathname : "/editor";
+      ? "/bragi_dark.png"
+      : "/bragi_light.png";
+  const authCallbackUrl =
+    pathname && pathname !== "/sign-in" ? pathname : "/editor";
 
   return (
     <header className="topbar">
       <Link className="brand" href="/editor" aria-label="Bragi editor home">
-        <img className="brand-logo" src={logoSrc} alt="Bragi" />
+        <Image
+          className="brand-logo"
+          src={logoSrc}
+          alt="Bragi"
+          width={840}
+          height={196}
+          priority
+        />
         <small>Video edits and scheduled posts</small>
       </Link>
 
-      <nav className="main-nav" aria-label="Primary navigation">
-        {navItems.map((item) => (
-          <Link
-            aria-current={pathname === item.href ? "page" : undefined}
-            className={pathname === item.href ? "active" : ""}
-            href={item.href}
-            key={item.href}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <button
+        aria-controls="topbar-menu"
+        aria-expanded={menuOpen}
+        aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+        className="icon-btn menu-toggle"
+        onClick={() => setMenuOpen((open) => !open)}
+        type="button"
+      >
+        {menuOpen ? <CloseIcon /> : <MenuIcon />}
+      </button>
 
-      <div className="topbar-actions">
-        <button
-          className="btn secondary"
-          onClick={() => mounted && setTheme(nextTheme)}
-          type="button"
-        >
-          {mounted && resolvedTheme === "dark" ? "Light" : "Dark"}
-        </button>
-        {status === "authenticated" ? (
+      <div
+        className={menuOpen ? "topbar-menu open" : "topbar-menu"}
+        id="topbar-menu"
+      >
+        <nav className="main-nav" aria-label="Primary navigation">
+          {navItems.map((item) => (
+            <Link
+              aria-current={pathname === item.href ? "page" : undefined}
+              className={pathname === item.href ? "active" : ""}
+              href={item.href}
+              key={item.href}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="topbar-actions">
           <button
-            className="btn secondary"
-            onClick={() => signOut()}
+            aria-label={themeLabel}
+            className="icon-btn theme-toggle"
+            onClick={() => mounted && setTheme(nextTheme)}
+            title={themeLabel}
             type="button"
           >
-            {session.user?.email ?? "Sign out"}
+            {mounted && resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
-        ) : (
-          <button
-            className="btn primary"
-            onClick={() => signIn(undefined, { callbackUrl: authCallbackUrl })}
-            type="button"
-          >
-            Sign in
-          </button>
-        )}
+          {status === "authenticated" ? (
+            <button
+              className="btn secondary"
+              onClick={() => signOut()}
+              title={session.user?.email ?? undefined}
+              type="button"
+            >
+              Sign out
+            </button>
+          ) : (
+            <button
+              className="btn primary"
+              onClick={() =>
+                signIn(undefined, { callbackUrl: authCallbackUrl })
+              }
+              type="button"
+            >
+              Sign in
+            </button>
+          )}
+        </div>
       </div>
     </header>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M20.4 14.5A8.5 8.5 0 0 1 9.5 3.6a7 7 0 1 0 10.9 10.9Z" />
+    </svg>
   );
 }
