@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
 import { Providers } from "@/components/Providers";
-// @ts-expect-error: CSS import type declarations are handled by Next.js
 import "./globals.css";
 
 export const metadata: Metadata = {
